@@ -1,0 +1,44 @@
+{
+  "name": "Widget · Exportar leads a Google Sheets",
+  "nodes": [
+    {
+      "parameters": {"rule": {"interval": [{"triggerAtHour": 18, "triggerAtMinute": 30}]}},
+      "name": "Todos los días 18:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "http://api:8000/v1/interno/leads",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {"parameters": [{"name": "cuenta", "value": "TU_SUBDOMINIO"}]},
+        "options": {"timeout": 60000}
+      },
+      "name": "Leer leads del servidor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {"__rl": true, "mode": "id", "value": "ID_DE_TU_SHEET"},
+        "sheetName": {"__rl": true, "mode": "name", "value": "Sheet1"},
+        "columns": {"mappingMode": "autoMapInputData", "matchingColumns": ["KOMMO ID"], "value": {}},
+        "options": {}
+      },
+      "name": "Escribir en el Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [480, 0]
+    }
+  ],
+  "connections": {
+    "Todos los días 18:30": {"main": [[{"node": "Leer leads del servidor", "type": "main", "index": 0}]]},
+    "Leer leads del servidor": {"main": [[{"node": "Escribir en el Sheet", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1", "timezone": "America/Lima", "saveDataSuccessExecution": "none", "saveDataErrorExecution": "all"}
+}

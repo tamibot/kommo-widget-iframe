@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Widget</title>
+<style>
+:root{--line:#e4e6ed;--muted:#6b7286;--blue:#2f6bff;--bg:#f6f7fb;--text:#19213d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,sans-serif}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:#fff;border-bottom:1px solid var(--line)}
+.grow{flex:1}.estado{font-size:12px;color:var(--muted)}
+input{padding:8px 10px;border:1px solid var(--line);border-radius:7px;min-width:220px;font:inherit}
+.btn{background:#fff;border:1px solid var(--line);border-radius:7px;padding:8px 12px;font-weight:600;cursor:pointer}
+.btn:disabled{opacity:.55;cursor:wait}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+main{padding:14px}table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:8px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}th{font-size:12px;color:var(--muted)}
+.vacio{padding:24px;text-align:center;color:var(--muted)}
+.toast{position:fixed;right:14px;bottom:14px;max-width:360px;padding:10px 14px;border-radius:8px;background:#19213d;color:#fff}
+.toast.err{background:#b42318}.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>Mi widget</b>
+  <input id="q" placeholder="Buscar lead, contacto o teléfono">
+  <span class="grow"></span>
+  <span class="estado" id="estado"></span>
+  <button class="btn" id="sync" title="Trae de Kommo lo cambiado en las últimas 24 horas">⟳ Sincronizar</button>
+</div>
+<main><div id="tabla" class="vacio">Cargando…</div></main>
+<div class="toast hidden" id="toast"></div>
+<script>
+(function(){
+'use strict';
+// El ticket llega en el #hash: no viaja al servidor en la URL ni queda en sus logs.
+var ticket=location.hash.slice(1), P=new URLSearchParams(location.search), LEAD=P.get('lead');
+try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+function $(i){return document.getElementById(i)}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function toast(t,err){var x=$('toast');x.textContent=t;x.className='toast'+(err?' err':'');clearTimeout(toast.t);toast.t=setTimeout(function(){x.classList.add('hidden')},4500)}
+function hace(iso){if(!iso)return 'nunca';var m=Math.round((Date.now()-new Date(iso))/60000);return m<1?'recién':m<60?'hace '+m+' min':'hace '+Math.round(m/60)+' h'}
+// Si el ticket vence, se pide otro al widget de Kommo (padre) sin recargar.
+function renovar(){return new Promise(function(ok){
+  if(window.parent===window)return ok(null);
+  var listo=false,oir=function(e){if(e.data&&'kwTicket' in e.data){listo=true;window.removeEventListener('message',oir);ok(e.data.kwTicket)}};
+  window.addEventListener('message',oir);window.parent.postMessage({kw:'renovar',lead:LEAD},'*');
+  setTimeout(function(){if(!listo){window.removeEventListener('message',oir);ok(null)}},8000)})}
+async function api(ruta,op,otra){op=op||{};var r=await fetch(ruta,{method:op.method||'GET',headers:{'X-Ticket':ticket}});
+  if(r.status===403&&!otra){var t=await renovar();if(t){ticket=t;return api(ruta,op,true)}}
+  var d=await r.json().catch(function(){return{}});if(!r.ok)throw new Error(d.detail||('Error '+r.status));return d}
+async function cargar(){var d=await api('/v1/embed/leads?q='+encodeURIComponent($('q').value.trim()));
+  $('estado').textContent='Sincronizado '+hace(d.ultimo_sync);
+  if(!d.leads.length){$('tabla').innerHTML='<div class="vacio">Sin resultados.</div>';$('tabla').className='';return}
+  $('tabla').className='';
+  $('tabla').innerHTML='<table><thead><tr><th>Lead</th><th>Contacto</th><th>Teléfono</th><th>Creado</th></tr></thead><tbody>'+
+    d.leads.map(function(l){return '<tr><td>'+esc(l.nombre)+'</td><td>'+esc(l.contacto)+'</td><td>'+esc(l.telefono)+'</td><td>'+esc((l.creado||'').slice(0,10))+'</td></tr>'}).join('')+'</tbody></table>'}
+async function sincronizar(){var b=$('sync'),t=b.textContent;b.disabled=true;b.textContent='Sincronizando…';
+  try{var r=await api('/v1/embed/sincronizar',{method:'POST'});await cargar();
+    toast(r.reciente?'Ya estaba al día: se sincronizó hace menos de 1 minuto.':'Listo: '+r.leads+' leads revisados con Kommo.')}
+  catch(e){toast(e.message,true)}finally{b.disabled=false;b.textContent=t}}
+var espera;$('q').addEventListener('input',function(){clearTimeout(espera);espera=setTimeout(function(){cargar().catch(function(e){toast(e.message,true)})},300)});
+$('sync').onclick=sincronizar;if(LEAD)$('sync').classList.add('hidden');
+// Avisar al padre la altura, para que el iframe de la ficha no tenga doble scroll.
+new ResizeObserver(function(){window.parent.postMessage({kwAlto:document.body.scrollHeight},'*')}).observe(document.body);
+if(!ticket){$('tabla').textContent='Abre esta página desde Kommo.';return}
+cargar().catch(function(e){$('tabla').textContent=e.message});
+})();
+</script>
+</body>
+</html>

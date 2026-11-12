@@ -1,0 +1,11 @@
+# HTTPS automático (Let's Encrypt). Los dominios vienen del .env.
+{$API_DOMINIO} {
+	# /v1/interno es solo para n8n dentro de la red de Docker: desde internet no existe.
+	@interno path /v1/interno/*
+	respond @interno 404
+	reverse_proxy api:8000
+}
+
+{$N8N_DOMINIO} {
+	reverse_proxy n8n:5678
+}

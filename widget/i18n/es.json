@@ -1,0 +1,13 @@
+{
+  "widget": {
+    "name": "Mi widget",
+    "short_description": "Una vista propia dentro de Kommo.",
+    "description": "Muestra una página de tu servidor dentro de Kommo, con datos al día por webhooks y un botón para sincronizar.",
+    "tour_description": "Conecta la cuenta una vez con un token y abre la vista desde Ajustes o desde la ficha del lead."
+  },
+  "settings": {
+    "token": "Token de larga duración (se usa una vez para conectar y no se guarda)",
+    "clave": "Clave del widget (se llena sola al conectar)"
+  },
+  "advanced": {"title": "Mi widget"}
+}
