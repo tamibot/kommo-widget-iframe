@@ -1,0 +1,27 @@
+{
+  "widget": {
+    "name": "widget.name",
+    "description": "widget.description",
+    "short_description": "widget.short_description",
+    "version": "0.1.0",
+    "interface_version": 2,
+    "init_once": false,
+    "locale": ["es"],
+    "installation": true,
+    "support": {
+      "link": "https://widget.tudominio.com/cotizaciones",
+      "email": "soporte@tudominio.com"
+    }
+  },
+  "locations": ["settings", "advanced_settings", "lcard-1"],
+  "tour": {
+    "is_tour": true,
+    "tour_images": {"es": ["/images/slideshow_1_es.jpg"]},
+    "tour_description": "widget.tour_description"
+  },
+  "settings": {
+    "token": {"name": "settings.token", "type": "pass", "required": false},
+    "clave": {"name": "settings.clave", "type": "text", "required": false}
+  },
+  "advanced": {"title": "advanced.title"}
+}

@@ -1,0 +1,13 @@
+{
+  "widget": {
+    "name": "Cotizaciones Kommo10K",
+    "short_description": "Cotizaciones y seguimiento por producto dentro de Kommo.",
+    "description": "Registra varias cotizaciones por cliente, conserva el historial de cada producto y organiza los próximos seguimientos.",
+    "tour_description": "Conecta la cuenta una vez y gestiona una cotización separada por cada producto o tratamiento."
+  },
+  "settings": {
+    "token": "Token de Kommo (se usa una vez para conectar y no se guarda)",
+    "clave": "Clave del widget (se llena sola al conectar)"
+  },
+  "advanced": {"title": "Cotizaciones Kommo10K"}
+}

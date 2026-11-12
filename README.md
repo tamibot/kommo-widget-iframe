@@ -31,9 +31,18 @@ lo que aprendimos en el camino, sin datos de ningún cliente.
 server/     API (FastAPI), página del iframe, esquema de la base y prueba de punta a punta
 widget/     La «cáscara» que se sube a Kommo (manifest, script, textos, logos) y build.sh
 n8n/        Flujo de ejemplo: exportar leads a Google Sheets
+ejemplos/   Dos widgets reales: Citas y Cotizaciones (cáscara + explicación)
 docs/       Guía de onboarding (GitHub Pages)
 docker-compose.yml · Caddyfile · .env.example
 ```
+
+## Ejemplos reales
+
+En [`ejemplos/`](ejemplos/) están las cáscaras de dos widgets en producción, con la explicación de qué hace
+cada uno y qué se aprendió:
+- **[Citas](ejemplos/citas/):** agenda dentro de Kommo, citas en la ficha y recordatorios por WhatsApp.
+- **[Cotizaciones](ejemplos/cotizaciones/):** varias cotizaciones o tratamientos por cliente, reportes
+  y Excel.
 
 ## Arranque rápido
 

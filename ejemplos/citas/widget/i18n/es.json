@@ -1,0 +1,15 @@
+{
+  "widget": {
+    "name": "Citas Kommo10K",
+    "short_description": "Tu agenda de citas dentro de Kommo.",
+    "description": "Agenda por día, semana y mes, citas de cada lead en su ficha, aviso de citas dobles y asistencia. Todo dentro de Kommo.",
+    "tour_description": "Instala, conecta con tu token una sola vez y agenda desde la ficha de cada lead."
+  },
+  "advanced": {
+    "title": "Citas Kommo10K"
+  },
+  "settings": {
+    "token": "Token de Kommo (se usa una vez para conectar y no se guarda)",
+    "clave": "Clave de la agenda (se llena sola al conectar)"
+  }
+}

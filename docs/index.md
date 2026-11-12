@@ -18,6 +18,7 @@ Esta guía te lleva de cero a un widget funcionando dentro de Kommo. Síguela en
 | 8 | [API keys y seguridad](08-api-keys-y-seguridad.md) | Cada clave, dónde vive y cómo rotarla |
 | 9 | [Límites de Kommo](09-limites-de-kommo.md) | Cómo no quedar bloqueado |
 | 10 | [Lecciones aprendidas](10-lecciones.md) | Lo que se rompió en producción y cómo se evitó |
+| 11 | [Ejemplos: Citas y Cotizaciones](https://github.com/tamibot/kommo-widget-iframe/tree/main/ejemplos) | Dos widgets reales explicados |
 
 ## En una frase
 
