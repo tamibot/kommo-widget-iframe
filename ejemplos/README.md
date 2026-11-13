@@ -1,16 +1,18 @@
-# Ejemplos reales: Citas y Cotizaciones
+# Ejemplos reales: Citas, Cotizaciones y dashboard de atención
 
-Dos widgets que funcionan hoy en cuentas de Kommo, publicados como ejemplo. Los dos siguen el mismo patrón
-del kit: el widget es solo una **cáscara** que abre una página del servidor en un iframe.
+Tres ejemplos que siguen el mismo patrón del kit: el widget es solo una **cáscara** que abre una página
+del servidor en un iframe. Citas y Cotizaciones funcionan hoy en cuentas de Kommo.
 
 | Ejemplo | Qué resuelve | Carpeta |
 |---|---|---|
 | **Citas** | Kommo no tiene «cita». Agenda por día, semana y mes; las citas de cada lead en su ficha; avisos de choque; recordatorios de WhatsApp | [`citas/`](citas/) |
 | **Cotizaciones** | Varias cotizaciones o tratamientos por cliente, cada uno con su propio seguimiento, reportes y Excel | [`cotizaciones/`](cotizaciones/) |
+| **Dashboard de atención** | Conversaciones por día, sin respuesta, por canal, agente y anuncio, con los datos que Kommo Power baja cada día | [`reportes-kommo-power/`](reportes-kommo-power/) |
 
 ## Qué hay en cada carpeta
 
-Solo la **cáscara del widget**: `manifest.json`, `script.js`, textos (`i18n/`) e imágenes. Es lo que se
+El dashboard de atención trae su código completo (servidor, página y prueba), listo para sumar al kit.
+De Citas y Cotizaciones va solo la **cáscara del widget**: `manifest.json`, `script.js`, textos (`i18n/`) e imágenes. Es lo que se
 sube a Kommo en un ZIP. El servidor de estos dos productos no se publica: tiene configuración de
 clientes. El servidor del kit (`server/`) muestra el mismo patrón completo, listo para adaptar.
 

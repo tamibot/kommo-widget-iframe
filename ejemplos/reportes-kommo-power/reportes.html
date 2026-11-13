@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reportes de atención</title>
+<style>
+:root{--line:#e4e6ed;--muted:#5f667a;--ink:#19213d;--bg:#f6f7fb;--card:#fff;--serie:#2f6bff;--grid:#eef0f5;
+  --warn-bg:#fff4e0;--warn:#8a4b00;--bad-bg:#fdecec;--bad:#9b1c1c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,sans-serif}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--line)}
+.grow{flex:1}.estado{font-size:12px;color:var(--muted)}
+.seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:7px 12px;font:inherit;font-weight:600;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--ink);color:#fff}
+main{padding:14px;display:grid;gap:14px}
+.aviso{padding:10px 14px;border-radius:8px;background:var(--warn-bg);color:var(--warn)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.tile .n{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}.tile .l{font-size:12px;color:var(--muted)}
+.tile.mal{background:var(--bad-bg)}.tile.mal .n{color:var(--bad)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card h3{margin:0 0 10px;font-size:14px}.dos{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{font-size:12px;color:var(--muted);font-weight:600}td.n,th.n{text-align:right}
+.vacio{color:var(--muted);padding:8px 0}a{color:var(--serie)}
+#grafico{position:relative}#grafico svg{display:block;width:100%;height:220px}#grafico{overflow:hidden}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-110%)}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>Atención por chat</b>
+  <div class="seg" id="rango">
+    <button data-d="7">7 días</button><button data-d="30" class="on">30 días</button><button data-d="90">90 días</button>
+  </div>
+  <span class="grow"></span>
+  <span class="estado" id="estado"></span>
+</div>
+<main id="main"><div class="vacio">Cargando…</div></main>
+<script>
+(function(){
+'use strict';
+var ticket=location.hash.slice(1),dias=30;
+try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+function $(i){return document.getElementById(i)}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function num(n){return Number(n||0).toLocaleString('es-PE')}
+// «2026-11-13» sin hora se lee como medianoche UTC y en Lima cae el día anterior: se lee como hora local.
+function fecha(iso){if(!iso)return '—';var d=new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso)?iso+'T00:00':iso);return d.toLocaleDateString('es-PE',{day:'2-digit',month:'short'})}
+function renovar(){return new Promise(function(ok){if(window.parent===window)return ok(null);
+  var oir=function(e){if(e.data&&'kwTicket' in e.data){window.removeEventListener('message',oir);ok(e.data.kwTicket)}};
+  window.addEventListener('message',oir);window.parent.postMessage({kw:'renovar'},'*');setTimeout(function(){ok(null)},8000)})}
+async function api(ruta,otra){var r=await fetch(ruta,{headers:{'X-Ticket':ticket}});
+  if(r.status===403&&!otra){var t=await renovar();if(t){ticket=t;return api(ruta,true)}}
+  var d=await r.json().catch(function(){return{}});if(!r.ok)throw new Error(d.detail||('Error '+r.status));return d}
+
+function tabla(cols,filas){if(!filas.length)return '<div class="vacio">Sin datos en este período.</div>';
+  return '<table><thead><tr>'+cols.map(function(c){return '<th class="'+(c.n?'n':'')+'">'+esc(c.t)+'</th>'}).join('')+'</tr></thead><tbody>'+
+    filas.map(function(f){return '<tr>'+cols.map(function(c){var v=c.f?c.f(f):f[c.k];return '<td class="'+(c.n?'n':'')+'">'+(c.html?v:esc(c.n?num(v):v))+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table>'}
+
+// Barras de conversaciones por día: una sola serie, sin leyenda; el título la nombra.
+// Se dibuja al ancho real del contenedor: así el texto no se encoge en pantallas angostas.
+function grafico(diario,ancho0){
+  if(!diario.length)return '<div class="vacio">Sin conversaciones en este período.</div>';
+  var W=Math.max(300,Math.round(ancho0||800)),H=220,pad={l:36,r:8,t:10,b:24},max=Math.max.apply(null,diario.map(function(d){return d.conversaciones}))||1;
+  var paso=Math.pow(10,Math.floor(Math.log10(max)));var tope=Math.ceil(max/paso)*paso;
+  var n=diario.length,etiquetas=Math.max(2,Math.floor(W/90)),cada=Math.max(1,Math.ceil(n/etiquetas)),ancho=(W-pad.l-pad.r)/n,bw=Math.max(2,ancho-2),y=function(v){return pad.t+(H-pad.t-pad.b)*(1-v/tope)};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Conversaciones por día">';
+  [0,.5,1].forEach(function(f){var v=tope*f;s+='<line x1="'+pad.l+'" x2="'+(W-pad.r)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--grid)"/>'+
+    '<text x="'+(pad.l-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="11" fill="var(--muted)">'+num(Math.round(v))+'</text>'});
+  diario.forEach(function(d,i){var x=pad.l+i*ancho+1,yy=y(d.conversaciones),h=H-pad.b-yy,r=Math.min(4,bw/2,h);
+    s+='<path data-i="'+i+'" fill="var(--serie)" d="M'+x+' '+(H-pad.b)+'V'+(yy+r)+'q0 -'+r+' '+r+' -'+r+'H'+(x+bw-r)+'q'+r+' 0 '+r+' '+r+'V'+(H-pad.b)+'Z"/>'+
+      '<rect data-i="'+i+'" x="'+(x-1)+'" y="'+pad.t+'" width="'+ancho+'" height="'+(H-pad.t-pad.b)+'" fill="transparent"/>';
+    if(i%cada===0||i===n-1)s+='<text x="'+(x+bw/2)+'" y="'+(H-6)+'" text-anchor="middle" font-size="11" fill="var(--muted)">'+esc(fecha(d.fecha))+'</text>'});
+  return s+'</svg><div class="tip hidden" id="tip"></div>'}
+function hover(diario){var g=$('grafico'),tip=$('tip');if(!tip)return;
+  g.addEventListener('mousemove',function(e){var i=e.target.getAttribute&&e.target.getAttribute('data-i');if(i===null||i===undefined){tip.classList.add('hidden');return}
+    var d=diario[+i],b=g.getBoundingClientRect(),x=Math.min(Math.max(e.clientX-b.left,90),b.width-90);tip.innerHTML='<b>'+esc(fecha(d.fecha))+'</b><br>'+num(d.conversaciones)+' conversaciones<br>'+num(d.con_humano)+' con persona · '+num(d.sin_respuesta)+' sin respuesta';
+    tip.style.left=x+'px';tip.style.top=(e.clientY-b.top)+'px';tip.classList.remove('hidden')});
+  g.addEventListener('mouseleave',function(){tip.classList.add('hidden')})}
+
+async function cargar(){
+  var d=await api('/v1/embed/reportes?dias='+dias),k=d.kpis;
+  $('estado').textContent='Datos de Kommo Power · '+(d.actualizado?'actualizado '+new Date(d.actualizado).toLocaleString('es-PE',{dateStyle:'short',timeStyle:'short'}):'sin datos todavía');
+  var h='';
+  if(d.datos_viejos)h+='<div class="aviso">⚠ La última bajada de Kommo Power tiene más de un día. Revisa que su tarea diaria siga corriendo.</div>';
+  h+='<div class="tiles">'+
+    '<div class="tile"><div class="n">'+num(k.conversaciones)+'</div><div class="l">Conversaciones</div></div>'+
+    '<div class="tile"><div class="n">'+k.pct_con_humano+'%</div><div class="l">Atendidas por una persona ('+num(k.con_humano)+')</div></div>'+
+    '<div class="tile"><div class="n">'+num(k.solo_bot)+'</div><div class="l">Solo bot</div></div>'+
+    '<div class="tile'+(k.pct_sin_respuesta>=10?' mal':'')+'"><div class="n">'+(k.pct_sin_respuesta>=10?'⚠ ':'')+k.pct_sin_respuesta+'%</div><div class="l">Sin respuesta ('+num(k.sin_respuesta)+')</div></div>'+
+    '<div class="tile"><div class="n">'+(k.mediana_primera_respuesta_min==null?'—':num(k.mediana_primera_respuesta_min)+' min')+'</div><div class="l">Mediana hasta la primera respuesta de una persona</div></div>'+
+  '</div>';
+  h+='<div class="card"><h3>Conversaciones por día</h3><div id="grafico"></div></div>';
+  h+='<div class="dos">'+
+    '<div class="card"><h3>Por canal</h3>'+tabla([{t:'Canal',k:'canal'},{t:'Conversaciones',k:'conversaciones',n:1},{t:'Sin respuesta',k:'sin_respuesta',n:1}],d.canales)+'</div>'+
+    '<div class="card"><h3>Por agente</h3>'+tabla([{t:'Agente',k:'agente'},{t:'Conversaciones',k:'conversaciones',n:1}],d.agentes)+'</div>'+
+    '<div class="card"><h3>Anuncios que trajeron chats</h3>'+tabla([{t:'Anuncio',k:'anuncio'},{t:'Conversaciones',k:'conversaciones',n:1},{t:'Sin respuesta',k:'sin_respuesta',n:1}],d.anuncios)+'</div>'+
+    '<div class="card"><h3>Leads nuevos por etapa</h3>'+tabla([{t:'Embudo',k:'embudo'},{t:'Etapa',k:'etapa'},{t:'Leads',k:'leads',n:1}],d.embudo)+'</div>'+
+  '</div>';
+  h+='<div class="card"><h3>Sin respuesta (los más recientes)</h3>'+tabla([{t:'Contacto',k:'contacto'},{t:'Canal',k:'canal'},{t:'Escribió',f:function(r){return fecha(r.desde)}},
+     {t:'',html:1,f:function(r){return '<a href="'+esc(r.url)+'" target="_top">Abrir lead</a>'}}],d.sin_respuesta)+'</div>';
+  $('main').innerHTML=h;var pinta=function(){$('grafico').innerHTML=grafico(d.diario,$('grafico').clientWidth);hover(d.diario)};pinta();
+  window.onresize=function(){clearTimeout(pinta.t);pinta.t=setTimeout(pinta,150)};
+}
+$('rango').addEventListener('click',function(e){var d=e.target.getAttribute('data-d');if(!d)return;dias=+d;
+  Array.prototype.forEach.call(this.children,function(b){b.classList.toggle('on',b===e.target)});cargar().catch(function(x){$('main').innerHTML='<div class="aviso">'+esc(x.message)+'</div>'})});
+if(!ticket){$('main').innerHTML='<div class="vacio">Abre esta página desde Kommo.</div>';return}
+cargar().catch(function(x){$('main').innerHTML='<div class="aviso">'+esc(x.message)+'</div>'});
+})();
+</script>
+</body>
+</html>
